@@ -34,7 +34,7 @@ public class PixelController {
                 request.y(),
                 request.color(),
                 request.userId(),
-                Instant.now()
+                java.time.Instant.now().toString()
         );
 
         // Send to Kafka "High Speed Pipe"

@@ -12,5 +12,5 @@ public record PixelEvent(
         int y,
         String color,
         String userId,
-        Instant timestamp
+        String timestamp
 ) {}
