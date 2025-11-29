@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: pixelverse-backend
+
+  # 1. MongoDB Configuration
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/pixelverse
+
+  # 2. Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    # Producer (Sending clicks to Kafka)
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        acks: all # Ensure data isn't lost
+
+    # Consumer (Reading clicks to update the board)
+    consumer:
+      group-id: pixel-group
+      auto-offset-reset: earliest # Read from start if no history found
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # Trust our custom object package so Jackson can deserialize it
+        spring.json.trusted.packages: "*"
