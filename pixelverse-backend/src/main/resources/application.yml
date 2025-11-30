@@ -30,3 +30,8 @@ spring:
       properties:
         # Trust our custom object package so Jackson can deserialize it
         spring.json.trusted.packages: "*"
+
+gemini:
+  api:
+    key: "AIzaSyDwfzMwSQfexYLv1nGkTa0VAcTewJK34pA"
+    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
