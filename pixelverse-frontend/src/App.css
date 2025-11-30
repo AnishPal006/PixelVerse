@@ -65,3 +65,26 @@ h1 {
   opacity: 0.5;
   font-size: 0.8rem;
 }
+
+.ai-commentary {
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  padding: 15px 25px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 15px rgba(110, 142, 251, 0.4);
+  animation: popIn 0.5s ease-out;
+  max-width: 80%;
+  text-align: center;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

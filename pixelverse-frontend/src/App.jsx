@@ -4,18 +4,17 @@ import { Stomp } from "@stomp/stompjs";
 import axios from "axios";
 import "./App.css";
 
-// 1. Configuration (Connects to your Spring Boot)
 const SOCKET_URL = "http://localhost:8080/ws-pixel";
 const API_URL = "http://localhost:8080/api/pixels";
-const GRID_SIZE = 50; // 50x50 Grid
+const GRID_SIZE = 50;
 
 function App() {
   const [grid, setGrid] = useState({});
-  const [selectedColor, setSelectedColor] = useState("#FF0000"); // Default Red
+  const [selectedColor, setSelectedColor] = useState("#FF0000");
+  const [commentary, setCommentary] = useState("Waiting for AI analysis..."); // <--- NEW STATE
   const stompClientRef = useRef(null);
 
   useEffect(() => {
-    // 2. Initial Load: Get existing pixels from MongoDB via API
     axios.get(API_URL).then((res) => {
       const initialMap = {};
       res.data.forEach((p) => {
@@ -24,24 +23,23 @@ function App() {
       setGrid(initialMap);
     });
 
-    // 3. Real-Time: Connect to WebSocket
     const socket = new SockJS(SOCKET_URL);
     const client = Stomp.over(socket);
-
-    // Turn off debug logs to keep console clean
     client.debug = () => {};
 
     client.connect({}, () => {
-      console.log("Connected to PixelVerse!");
-
-      // Listen for updates from the Backend
+      // 1. Subscribe to Board Updates
       client.subscribe("/topic/board", (message) => {
         const update = JSON.parse(message.body);
-        // Update ONLY the specific pixel that changed (Fast!)
         setGrid((prev) => ({
           ...prev,
           [`${update.x}-${update.y}`]: update.color,
         }));
+      });
+
+      // 2. Subscribe to AI Commentary (NEW)
+      client.subscribe("/topic/commentary", (message) => {
+        setCommentary(message.body); // Update the text
       });
     });
 
@@ -52,12 +50,8 @@ function App() {
     };
   }, []);
 
-  // 4. Handle Click (Send to Kafka via API)
   const handlePixelClick = (x, y) => {
-    // Optimistic Update (makes it feel instant)
     setGrid((prev) => ({ ...prev, [`${x}-${y}`]: selectedColor }));
-
-    // Send "Fire and Forget" request to Backend
     axios.post(API_URL, {
       x,
       y,
@@ -70,6 +64,11 @@ function App() {
     <div className="app-container">
       <h1>PixelVerse Live 🎨</h1>
 
+      {/* NEW: AI Commentary Box */}
+      <div className="ai-commentary">
+        🤖 <strong>AI Analyst:</strong> {commentary}
+      </div>
+
       <div className="controls">
         <input
           type="color"
@@ -80,7 +79,6 @@ function App() {
         <span>Pick a Color</span>
       </div>
 
-      {/* The Canvas */}
       <div
         className="grid"
         style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
@@ -99,8 +97,6 @@ function App() {
           );
         })}
       </div>
-
-      <p className="footer">Powered by Kafka & Spring Boot</p>
     </div>
   );
 }
