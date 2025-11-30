@@ -1,90 +1,305 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@600;700&display=swap");
+
+:root {
+  --bg-color: #050505;
+  --panel-bg: #111111;
+  --accent: #00f3ff;
+  --accent-glow: rgba(0, 243, 255, 0.4);
+  --danger: #ff0055;
+  --text-main: #ffffff;
+  --text-muted: #888888;
+}
+
 body {
   margin: 0;
-  background-color: #1a1a1a;
-  font-family: "Segoe UI", sans-serif;
-  color: white;
+  background-color: var(--bg-color);
+  background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 80%);
+  color: var(--text-main);
+  font-family: "Rajdhani", sans-serif;
+  height: 100vh;
+  overflow: hidden; /* Prevents scrollbars */
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  max-width: 1920px;
+  margin: 0 auto;
+}
+
+/* --- NAVBAR --- */
+.navbar {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  min-height: 100vh;
-  padding: 20px;
+  padding: 15px 40px;
+  border-bottom: 1px solid #222;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
-h1 {
-  margin-bottom: 20px;
-  font-weight: 300;
-  letter-spacing: 2px;
-}
-
-.controls {
-  margin-bottom: 20px;
+.logo-section {
   display: flex;
   align-items: center;
   gap: 15px;
-  background: #333;
-  padding: 10px 20px;
-  border-radius: 50px;
 }
 
-.color-picker {
-  border: none;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  background: none;
+.brand-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.8rem;
+  letter-spacing: -1px;
+  margin: 0;
 }
 
-.grid {
-  display: grid;
-  width: 90vw;
-  max-width: 600px;
+.highlight {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.live-badge {
+  font-size: 0.7rem;
+  color: #ff0055;
+  border: 1px solid #ff0055;
+  padding: 2px 8px;
+  border-radius: 4px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* --- DASHBOARD LAYOUT (3 Columns) --- */
+.dashboard {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  padding: 20px;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* --- GENERIC SIDE PANEL --- */
+.side-panel {
+  width: 260px; /* Fixed width for symmetry */
+  height: 75vh;
+  background: var(--panel-bg);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex-shrink: 0; /* Never shrink */
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.side-panel h3 {
+  font-family: "JetBrains Mono";
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+  margin-top: 0;
+  letter-spacing: 1px;
+}
+
+/* --- LEFT PANEL: AI TERMINAL --- */
+.ai-terminal {
+  background: #08080a;
+  border: 1px solid #222;
+  border-left: 2px solid var(--accent);
+  border-radius: 4px;
+  flex: 1; /* Fills the rest of the panel height */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.terminal-header {
+  background: #15151a;
+  padding: 8px 12px;
+  font-family: "JetBrains Mono";
+  font-size: 0.7rem;
+  color: #555;
+  border-bottom: 1px solid #222;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.blink {
+  animation: blink 1s infinite;
+  color: var(--danger);
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.terminal-body {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+}
+
+.ai-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.ai-message {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.9rem;
+  color: var(--accent);
+  line-height: 1.5;
+  margin: 0;
+  white-space: normal; /* Ensures text wraps */
+}
+
+/* --- CENTER PANEL: CANVAS --- */
+.canvas-container {
+  height: 75vh;
   aspect-ratio: 1;
-  gap: 0; /* Tight grid */
-  background-color: #333;
-  border: 10px solid #444;
-  border-radius: 10px;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  padding: 5px;
+  background: linear-gradient(135deg, #333 0%, #000 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 60px rgba(0, 243, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.pixel-grid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  background: #000;
 }
 
 .pixel {
   width: 100%;
   height: 100%;
-  background-color: white;
   cursor: crosshair;
 }
-
 .pixel:hover {
-  filter: brightness(0.8);
+  opacity: 0.7;
+  box-shadow: inset 0 0 2px white;
 }
 
-.footer {
-  margin-top: 30px;
-  opacity: 0.5;
+/* --- RIGHT PANEL: CONTROLS --- */
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.color-swatch {
+  width: 100%;
+  aspect-ratio: 1; /* Now they will be ~45px squares instead of 100px */
+  border-radius: 4px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.2s;
+}
+
+.color-swatch:hover {
+  transform: scale(1.05);
+}
+.color-swatch.selected {
+  border-color: white;
+  box-shadow: 0 0 10px var(--accent);
+}
+
+.custom-color-label {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #222;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 5px;
   font-size: 0.8rem;
+  color: #aaa;
+  border: 1px solid #333;
 }
 
-.ai-commentary {
-  background: linear-gradient(135deg, #6e8efb, #a777e3);
-  padding: 15px 25px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  font-size: 1.1rem;
-  box-shadow: 0 4px 15px rgba(110, 142, 251, 0.4);
-  animation: popIn 0.5s ease-out;
-  max-width: 80%;
-  text-align: center;
+.custom-color-label:hover {
+  background: #333;
+  color: white;
 }
 
-@keyframes popIn {
-  from {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+.custom-color-label input {
+  border: none;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.actions {
+  /* 🔴 REMOVE "margin-top: auto" to stop it from pushing off-screen */
+  margin-top: 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%; /* Ensure full width */
+}
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-undo {
+  background: #222;
+  color: white;
+  border: 1px solid #444;
+}
+.btn-undo:hover:not(:disabled) {
+  background: #333;
+  border-color: white;
+}
+.btn-undo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-clear {
+  background: rgba(255, 0, 85, 0.1);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.btn-clear:hover {
+  background: var(--danger);
+  color: white;
+  box-shadow: 0 0 20px var(--danger);
 }

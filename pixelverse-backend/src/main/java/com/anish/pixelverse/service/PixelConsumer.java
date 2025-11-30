@@ -18,12 +18,17 @@ public class PixelConsumer {
 
     @KafkaListener(topics = "t.pixel.updates", groupId = "pixel-group")
     public void consume(PixelEvent event) {
-        log.info("Pixel Update: [{}, {}] -> {}", event.x(), event.y(), event.color());
-
-        // 1. Save to Persistence (MongoDB)
-        pixelRepository.save(event);
-
-        // 2. Broadcast to Real-Time Clients (React)
-        messagingTemplate.convertAndSend("/topic/board", event);
+        // 🔴 Logic Check: Is this a paint event or a clear signal?
+        if (event.x() == -1 && event.y() == -1) {
+            // It's a CLEAR signal. Don't save to DB (it's already cleared).
+            // Just tell Frontend to wipe.
+            log.info("📢 Broadcasting Board Reset!");
+            messagingTemplate.convertAndSend("/topic/board", event);
+        } else {
+            // Normal Paint Event
+            log.info("Pixel Update: [{}, {}]", event.x(), event.y());
+            pixelRepository.save(event);
+            messagingTemplate.convertAndSend("/topic/board", event);
+        }
     }
 }

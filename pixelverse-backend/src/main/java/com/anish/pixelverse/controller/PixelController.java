@@ -42,6 +42,18 @@ public class PixelController {
         kafkaTemplate.send("t.pixel.updates", event.id(), event);
     }
 
+    @DeleteMapping
+    public void clearBoard() {
+        // 1. Wipe the Database
+        pixelRepository.deleteAll();
+
+        // 2. Send "Reset Signal" to Kafka (x = -1 is our secret code)
+        PixelEvent clearSignal = new PixelEvent(
+                "RESET", -1, -1, "#000000", "ADMIN", java.time.Instant.now().toString()
+        );
+        kafkaTemplate.send("t.pixel.updates", "RESET", clearSignal);
+    }
+
     // A small DTO record just for the input
     public record PixelRequest(int x, int y, String color, String userId) {}
 }

@@ -7,11 +7,22 @@ import "./App.css";
 const SOCKET_URL = "http://localhost:8080/ws-pixel";
 const API_URL = "http://localhost:8080/api/pixels";
 const GRID_SIZE = 50;
+const PRESET_COLORS = [
+  "#FF0055",
+  "#00FFFF",
+  "#39FF14",
+  "#FFE700",
+  "#FFFFFF",
+  "#000000",
+  "#9D00FF",
+  "#FF6600",
+];
 
 function App() {
   const [grid, setGrid] = useState({});
-  const [selectedColor, setSelectedColor] = useState("#FF0000");
-  const [commentary, setCommentary] = useState("Waiting for AI analysis..."); // <--- NEW STATE
+  const [selectedColor, setSelectedColor] = useState("#00FFFF");
+  const [commentary, setCommentary] = useState("Initializing AI Link...");
+  const [history, setHistory] = useState([]);
   const stompClientRef = useRef(null);
 
   useEffect(() => {
@@ -28,74 +39,153 @@ function App() {
     client.debug = () => {};
 
     client.connect({}, () => {
-      // 1. Subscribe to Board Updates
       client.subscribe("/topic/board", (message) => {
         const update = JSON.parse(message.body);
-        setGrid((prev) => ({
-          ...prev,
-          [`${update.x}-${update.y}`]: update.color,
-        }));
+        if (update.x === -1) {
+          setGrid({});
+          setHistory([]);
+        } else {
+          setGrid((prev) => ({
+            ...prev,
+            [`${update.x}-${update.y}`]: update.color,
+          }));
+        }
       });
 
-      // 2. Subscribe to AI Commentary (NEW)
       client.subscribe("/topic/commentary", (message) => {
-        setCommentary(message.body); // Update the text
+        setCommentary(message.body);
       });
     });
 
     stompClientRef.current = client;
-
     return () => {
       if (client) client.disconnect();
     };
   }, []);
 
   const handlePixelClick = (x, y) => {
-    setGrid((prev) => ({ ...prev, [`${x}-${y}`]: selectedColor }));
+    const key = `${x}-${y}`;
+    const prevColor = grid[key] || "#1a1a1a";
+    setHistory((prev) => [...prev, { x, y, color: prevColor }]);
+    setGrid((prev) => ({ ...prev, [key]: selectedColor }));
     axios.post(API_URL, {
       x,
       y,
       color: selectedColor,
-      userId: "user-" + Math.floor(Math.random() * 1000),
+      userId: "user-" + Math.floor(Math.random() * 999),
     });
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const lastMove = history[history.length - 1];
+    setHistory((prev) => prev.slice(0, -1));
+    axios.post(API_URL, {
+      x: lastMove.x,
+      y: lastMove.y,
+      color: lastMove.color,
+      userId: "UNDO-ACTION",
+    });
+  };
+
+  const handleClearBoard = () => {
+    if (
+      confirm(
+        "⚠ WARNING: This will wipe the entire board for all users. Continue?"
+      )
+    ) {
+      axios.delete(API_URL);
+    }
   };
 
   return (
     <div className="app-container">
-      <h1>PixelVerse Live 🎨</h1>
+      <nav className="navbar">
+        <div className="logo-section">
+          <h1 className="brand-title">
+            PIXEL <span className="highlight">VERSE</span>
+          </h1>
+        </div>
+        <div className="live-badge">● LIVE CONNECTION</div>
+      </nav>
 
-      {/* NEW: AI Commentary Box */}
-      <div className="ai-commentary">
-        🤖 <strong>AI Analyst:</strong> {commentary}
-      </div>
+      <div className="dashboard">
+        {/* 🟢 COLUMN 1: AI ANALYST (LEFT) */}
+        <div className="side-panel ai-panel">
+          <h3>GEMINI ANALYST</h3>
+          <div className="ai-terminal">
+            <div className="terminal-header">
+              <span className="blink">●</span> RECIEVING SIGNAL...
+            </div>
+            <div className="terminal-body">
+              <span className="ai-icon">🤖</span>
+              <p className="ai-message">{commentary}</p>
+            </div>
+          </div>
+        </div>
 
-      <div className="controls">
-        <input
-          type="color"
-          value={selectedColor}
-          onChange={(e) => setSelectedColor(e.target.value)}
-          className="color-picker"
-        />
-        <span>Pick a Color</span>
-      </div>
+        {/* 🟡 COLUMN 2: CANVAS (CENTER) */}
+        <div className="canvas-container">
+          <div
+            className="pixel-grid"
+            style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
+          >
+            {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
+              const x = Math.floor(i / GRID_SIZE);
+              const y = i % GRID_SIZE;
+              const key = `${x}-${y}`;
+              return (
+                <div
+                  key={key}
+                  className="pixel"
+                  style={{ backgroundColor: grid[key] || "#1a1a1a" }}
+                  onMouseDown={() => handlePixelClick(x, y)}
+                />
+              );
+            })}
+          </div>
+        </div>
 
-      <div
-        className="grid"
-        style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
-      >
-        {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
-          const x = Math.floor(i / GRID_SIZE);
-          const y = i % GRID_SIZE;
-          const key = `${x}-${y}`;
-          return (
-            <div
-              key={key}
-              className="pixel"
-              style={{ backgroundColor: grid[key] || "#ffffff" }}
-              onMouseDown={() => handlePixelClick(x, y)}
-            />
-          );
-        })}
+        {/* 🔴 COLUMN 3: CONTROLS (RIGHT) */}
+        <div className="side-panel control-panel">
+          <div className="panel-section">
+            <h3>PALETTE</h3>
+            <div className="palette-grid">
+              {PRESET_COLORS.map((c) => (
+                <div
+                  key={c}
+                  className={`color-swatch ${
+                    selectedColor === c ? "selected" : ""
+                  }`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => setSelectedColor(c)}
+                />
+              ))}
+              <label className="custom-color-label">
+                <input
+                  type="color"
+                  value={selectedColor}
+                  onChange={(e) => setSelectedColor(e.target.value)}
+                />
+                <span>PICK</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="panel-section actions">
+            <h3>ACTIONS</h3>
+            <button
+              className="btn btn-undo"
+              onClick={handleUndo}
+              disabled={history.length === 0}
+            >
+              ↩ UNDO
+            </button>
+            <button className="btn btn-clear" onClick={handleClearBoard}>
+              ☢ WIPE
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
