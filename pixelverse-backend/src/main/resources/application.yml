@@ -9,10 +9,12 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/pixelverse
+     # uri: mongodb://mongo:27017/pixelverse
 
   # 2. Kafka Configuration
   kafka:
     bootstrap-servers: localhost:9092
+    #bootstrap-servers: kafka:9092
 
     # Producer (Sending clicks to Kafka)
     producer:
@@ -33,5 +35,6 @@ spring:
 
 gemini:
   api:
-    key: "AIzaSyD7MGpcciQNXEkr49Pm-jvlCd1RwWFBtKM"
+    #key: "AIzaSyD7MGpcciQNXEkr49Pm-jvlCd1RwWFBtKM"
+    key: "${GEMINI_API_KEY}"
     url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
