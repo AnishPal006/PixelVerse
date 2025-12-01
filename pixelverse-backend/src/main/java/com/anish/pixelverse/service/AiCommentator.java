@@ -2,6 +2,7 @@ package com.anish.pixelverse.service;
 
 import com.anish.pixelverse.model.PixelEvent;
 import com.anish.pixelverse.repository.PixelRepository;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,33 +24,53 @@ public class AiCommentator {
     private final GeminiService geminiService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    // Run every 20 seconds
-    @Scheduled(fixedRate = 20000)
+    private String lastBoardSignature = "";
+
+    // 🟢 1. MEMORY: Store the last response so new users can see it
+    @Getter
+    private String lastCommentary = "Waiting for satellite link...";
+
+    @Scheduled(fixedRate = 10000)
     public void analyzeBoard() {
-        log.info("AI Commentator is looking at the board...");
-
         List<PixelEvent> pixels = pixelRepository.findAll();
+        if (pixels.isEmpty()) return;
 
-        if (pixels.isEmpty()) {
-            return; // Nothing to say
+        // Signature check to save API calls
+        String currentSignature = pixels.size() + "-" + pixels.hashCode();
+        if (currentSignature.equals(lastBoardSignature)) return;
+        lastBoardSignature = currentSignature;
+
+        log.info("🎨 Sending Board Visual to Gemini...");
+
+        // 🟢 2. VISION UPGRADE: Convert pixels to ASCII Grid
+        char[][] grid = new char[50][50];
+        for (char[] row : grid) Arrays.fill(row, '.'); // Fill with empty space
+
+        for (PixelEvent p : pixels) {
+            if (p.x() >= 0 && p.x() < 50 && p.y() >= 0 && p.y() < 50) {
+                grid[p.x()][p.y()] = '█'; // Draw the pixel
+            }
         }
 
-        // 1. Build a prompt describing the board
-        // We only send non-white pixels to save tokens
-        String boardDescription = pixels.stream()
-                .map(p -> String.format("[%d,%d is %s]", p.x(), p.y(), p.color()))
-                .limit(200) // Limit to 200 pixels to avoid overwhelming the AI (or cost)
-                .collect(Collectors.joining(", "));
+        // Convert 2D array to a single string
+        StringBuilder asciiArt = new StringBuilder();
+        for (int i = 0; i < 50; i++) {
+            asciiArt.append(new String(grid[i])).append("\n");
+        }
 
-        String prompt = "You are a hilarious sports commentator watching a collaborative pixel art game. " +
-                "Here is a list of colored pixels (x,y is color): " + boardDescription + ". " +
-                "Describe what you think is being drawn. Be brief, funny, and excited. Max 1 sentence.";
+        // 🟢 3. NEW PROMPT: Ask it to look at the ASCII art
+        String prompt = "You are looking at a 50x50 pixel art grid represented by ASCII characters. " +
+                "The character '█' represents a colored pixel, and '.' is empty space.\n\n" +
+                asciiArt.toString() + "\n\n" +
+                "Identify the main object or shape. Is it a house? A face? A tree? " +
+                "Ignore stray pixels. Be confident. Max 10 words.";
 
-        // 2. Ask Gemini
-        String commentary = geminiService.getCommentary(prompt);
-        log.info("AI Says: {}", commentary);
+        String response = geminiService.getCommentary(prompt);
 
-        // 3. Broadcast to Frontend
-        messagingTemplate.convertAndSend("/topic/commentary", commentary);
+        // Clean up response
+        this.lastCommentary = response.trim();
+        log.info("AI Says: {}", this.lastCommentary);
+
+        messagingTemplate.convertAndSend("/topic/commentary", this.lastCommentary);
     }
 }
