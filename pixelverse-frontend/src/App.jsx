@@ -6,6 +6,7 @@ import "./App.css";
 
 const SOCKET_URL = "http://localhost:8080/ws-pixel";
 const API_URL = "http://localhost:8080/api/pixels";
+const AI_API_URL = "http://localhost:8080/api/ai/latest";
 const GRID_SIZE = 50;
 const PRESET_COLORS = [
   "#FF0055",
@@ -26,6 +27,7 @@ function App() {
   const stompClientRef = useRef(null);
 
   useEffect(() => {
+    // 1. Fetch Pixels
     axios.get(API_URL).then((res) => {
       const initialMap = {};
       res.data.forEach((p) => {
@@ -34,6 +36,19 @@ function App() {
       setGrid(initialMap);
     });
 
+    // 2. Fetch Last AI Commentary
+    axios
+      .get(AI_API_URL)
+      .then((res) => {
+        if (res.data && res.data.commentary) {
+          setCommentary(res.data.commentary);
+        }
+      })
+      .catch(() => {
+        setCommentary("Waiting for analysis...");
+      });
+
+    // 3. WebSocket Connection
     const socket = new SockJS(SOCKET_URL);
     const client = Stomp.over(socket);
     client.debug = () => {};
@@ -115,7 +130,7 @@ function App() {
           <h3>GEMINI ANALYST</h3>
           <div className="ai-terminal">
             <div className="terminal-header">
-              <span className="blink">●</span> RECIEVING SIGNAL...
+              <span className="blink">●</span> RECEIVING SIGNAL...
             </div>
             <div className="terminal-body">
               <span className="ai-icon">🤖</span>
